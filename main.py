@@ -6,8 +6,8 @@ mai = None
 pas = None
 @app.route('/login')
 def index():
-  mai = request.form["m"]
-  pas = request.form["p"]
+  mai = request.args.get('m')
+  pas = request.args.get('p')
   url = "https://api.revolt.chat/auth/session/login"
 　payload = {"email": mai,"password": pas}
 　headers = {"Content-Type": "application/json","X-Session-Token": "YOUR_TOKEN"}
@@ -16,7 +16,7 @@ def index():
   return "Login"
 
 @app.route('/ch')
-def index():
+def index2():
     # チャンネルIDとAPIトークンを設定
     channel_id = request.args.get('id')  # チャンネルのIDを入力
     url = f'https://api.revolt.chat/channels/{channel_id}/messages'
