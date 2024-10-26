@@ -9,9 +9,9 @@ def index():
   mai = request.args.get('m')
   pas = request.args.get('p')
   url = "https://api.revolt.chat/auth/session/login"
-　payload = {"email": mai,"password": pas}
-　headers = {"Content-Type": "application/json","X-Session-Token": "YOUR_TOKEN"}
-　response = requests.patch(url, json=payload, headers=headers)
+  payload = {"email": mai,"password": pas}
+  headers = {"Content-Type": "application/json","X-Session-Token": "YOUR_TOKEN"}
+  response = requests.patch(url, json=payload, headers=headers)
   token = data['token']
   return "Login"
 
