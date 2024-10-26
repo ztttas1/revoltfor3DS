@@ -21,7 +21,7 @@ def index():
     channel_id = request.args.get('id')  # チャンネルのIDを入力
     url = f'https://api.revolt.chat/channels/{channel_id}/messages'
     headers = {
-        'Authorization': 'Bearer YOUR_TOKEN'  # APIトークンを入力
+        'Authorization': f'{token}'  # APIトークンを入力
     }
 
     # メッセージを取得
