@@ -1,64 +1,65 @@
-from flask import Flask, render_template_string
+from flask import Flask, request, jsonify
 import requests
+import json
 app = Flask(__name__)
-token = None
-mai = None
-pas = None
-@app.route('/login')
-def index():
-  mai = request.args.get('m')
-  pas = request.args.get('p')
-  url = "https://api.revolt.chat/auth/session/login"
-  payload = {"email": mai,"password": pas}
-  headers = {"Content-Type": "application/json","X-Session-Token": "YOUR_TOKEN"}
-  response = requests.patch(url, json=payload, headers=headers)
-  token = data['token']
-  return "Login"
 
-@app.route('/ch')
-def index2():
-    # チャンネルIDとAPIトークンを設定
-    channel_id = request.args.get('id')  # チャンネルのIDを入力
-    url = f'https://api.revolt.chat/channels/{channel_id}/messages'
+# グローバル変数としてtokenを保存
+token = None
+
+@app.route('/login', methods=['GET'])
+def login():
+    global token
+    m = request.args.get('m')
+    p = request.args.get('p')
+
+    url = "https://api.revolt.chat/auth/session/login"
+    payload = {"email": m, "password": p}
     headers = {
-        'Authorization': f'{token}'  # APIトークンを入力
+        "Content-Type": "application/json"
     }
 
-    # メッセージを取得
+    response = requests.post(url, json=payload, headers=headers)
+
+    if response.status_code == 200:
+        token_data = response.json()
+        token = token_data.get('token')
+        return jsonify({'status': 'success', 'token': token})
+    else:
+        return jsonify({'status': 'error', 'message': response.text}), response.status_code
+
+@app.route('/', methods=['GET'])
+def get_messages():
+    global token
+    channel_id = request.args.get('channel_id')
+
+    if not token:
+        return jsonify({'status': 'error', 'message': 'Not authenticated. Please log in first.'}), 401
+
+    url = f"https://api.revolt.chat/channels/{channel_id}/messages"
+    headers = {"X-Session-Token": token}
+
     response = requests.get(url, headers=headers)
 
+    print(f"Requesting messages from channel {channel_id} with token {token}")  # デバッグ用
+    json_load = json.load(response)
     if response.status_code == 200:
         messages = response.json()
 
-        # メッセージを格納するリスト
-        formatted_messages = []
+        # ここでmessagesの内容を印刷して確認
+        print("Response messages:", messages)
 
-        # 最初の10件を取得してフォーマット
-        for msg in messages[:10]:
-            username = msg['author']['username']
-            content = msg['content']
-            formatted_messages.append(f"{username}: {content}")
-
-        # 変数にまとめたメッセージをHTMLで表示
-        result = "<br>".join(formatted_messages)
+        # messagesがリストであることを確認
+        if isinstance(messages, list):
+            formatted_messages = [
+                {'username': json_load['users'], 'content': json_load['messages']}
+                for msg in messages
+            ]
+            return jsonify(formatted_messages)
+        else:
+            return jsonify({'status': 'error', 'message': 'Unexpected response format. Expected a list.'}), 500
     else:
-        result = f"Error: {response.status_code}"
+        error_message = response.text
+        return jsonify({'status': 'error', 'message': error_message}), response.status_code
 
-    # HTMLテンプレートを作成
-    html_template = '''
-    <!doctype html>
-    <html lang="ja">
-    <head>
-        <meta charset="utf-8">
-        <title>Revolt Messages</title>
-    </head>
-    <body>
-        <h1>メッセージ一覧</h1>
-        <div>{{ messages|safe }}</div>
-    </body>
-    </html>
-    '''
-
-    return render_template_string(html_template, messages=result)
 if __name__ == '__main__':
     app.run(debug=True)
